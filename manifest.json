@@ -1,0 +1,46 @@
+{
+    "manifest_version": 2,
+    "name": "Web Adventure Hero",
+    "short_name": "WAH",
+    "description": "DESCRIPTION",
+    "version": "0.0.1",
+    
+    "background":
+    {
+        "scripts": ["src/background/launcher.js"]
+    },
+
+    "browser_action":
+    {
+        "default_icon":
+        {
+            "64": "icons/icon64.png"
+        }
+    },
+    
+    "content_scripts":
+    [
+        {
+            "matches":
+            [
+                "*://*/*"
+            ],
+
+            "js":
+            [
+                "src/content_scripts/entity.js",
+                "src/content_scripts/spatialhash.js",
+                "src/content_scripts/vips.js",
+                "src/content_scripts/game.js",
+                "src/content_scripts/main.js"
+            ],
+
+            "run_at": "document_idle"
+        }
+    ],
+
+    "permissions":
+    [
+        "activeTab"
+    ]
+}
