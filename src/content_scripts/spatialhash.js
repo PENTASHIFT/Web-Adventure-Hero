@@ -149,9 +149,9 @@ class SpatialHash
             // Get entities within rectangular range of cells encompassing
             //      starting pos and projected ending pos.
 
-            // NOTE(josh): Bruteforcing like this is suboptimal way of handling
-            //              this; however, this works no matter size or speed of
-            //              the entity.
+            // NOTE(josh): Bruteforcing like this is a suboptimal way of 
+            //              handling this; however, this works no matter size 
+            //              or speed of the entity.
             //              While suboptimal, for most use cases the difference
             //              won't be substantial. If performance becomes an
             //              issue, use a ray approach.

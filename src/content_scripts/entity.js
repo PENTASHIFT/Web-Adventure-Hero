@@ -191,8 +191,6 @@ function entityMove(entity, spatialh)
     spatialh.updateObject(entity);
 
     // Push response to collision.
-    // NOTE(josh): Something is going on here causing the player to get stuck
-    //              when two directions are pushed.
     if (collisionTime < 1.0)
     {
         var remainingTime = 1.0 - collisionTime;
