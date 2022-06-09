@@ -68,9 +68,7 @@ function isState(entityState, state)
     return ((entityState & state) > 0) ? true : false;
 }
 
-// TODO(josh): Clean up this mess.
-// TODO(josh): Allow this to update multiple flags within one call.
-// TODO(josh): Check if entityState is a copy or pointer to actual value.
+// Overly convoluted FSM.
 function stateUpdate(entityState, state)
 {
     // TODO(josh): What if dead in mid-air???
@@ -78,6 +76,11 @@ function stateUpdate(entityState, state)
     {
         // Clear all states except sign then set dying state.
         return ((entityState & STATES.sign) | STATES.dying);
+    }
+
+    if (state == STATES.sign)
+    {
+        return (entityState ^= STATES.sign);
     }
 
     if ((state == STATES.jumping) && ((entityState & STATES.hasJumped) > 0))
@@ -90,24 +93,24 @@ function stateUpdate(entityState, state)
         ((state == STATES.standing) ||
         (state == STATES.running)))
     {
+        // Reset hasJumped.
         entityState &= ~(STATES.hasJumped);
     }
 
-    if ((state == STATES.hasJumped) && 
-        ((entityState & STATES.hasJumped) == 0))
+    if (state == STATES.hasJumped)
     {
-        return (entityState |= state);
-    }
-    else if (state == STATES.hasJumped)
-    {
-        return entityState;
+        if ((entityState & STATES.hasJumped) == 0)
+            return (entityState |= state);
+        else
+            return entityState;
     }
 
     switch ((entityState & 0xF00000))
     {
         case STATES.standing:
         {
-            if (state != STATES.standing)
+            if ((state != STATES.standing) &&
+                (state != STATES.jumping))
             {
                 entityState ^= STATES.standing;  // Toggle standing off.
                 entityState |= state;
@@ -117,14 +120,18 @@ function stateUpdate(entityState, state)
 
         case STATES.running:
         {
-            entityState ^= STATES.running;
-            entityState |= state;
-            entityState &= ~(0xFFC00);
+            if ((state != STATES.running) &&
+                (state != STATES.jumping))
+            {
+                entityState ^= STATES.running;
+                entityState |= state;
+                entityState &= ~(0xFFC00);
+            }
         } break;
 
         case STATES.jumping:
         {
-            if (state != STATES.jumping)
+            if ((state == STATES.falling) || (state == STATES.hasJumped))
             {
                 entityState ^= STATES.jumping;
                 entityState |= state;

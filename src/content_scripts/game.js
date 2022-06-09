@@ -1,7 +1,5 @@
 "use strict";
 
-// TODO(josh): Account for window changing size.
-
 class Game
 {
     constructor(dim, sh)
@@ -33,22 +31,20 @@ class Game
             new Entity([ this.canvas.width - 1, 0, 1, this.canvas.height ])
         );
 
-        // See entity.js
-        this.player = new Entity([
-            this.canvas.width >> 1, 
-            this.canvas.height >> 1, 
-            32, 64
-        ], 0, this.gravity);
-
-        // All moving entities.
-        this.entities = new Array;
-        this.entities.push(this.player);
-
-        // NOTE(josh): This needs to standardized for all objects.
-        this.player.id = 2;
+        this.player = this._spawnPlayer();
+        
+        if (this.player == null)
+        {
+            console.log("WEB ADVENTURE HERO: Web page is too crowded!");
+            throw "Web Page is too crowded.";
+        }
 
         this.spatialh.insertObject(this.player);
-        
+
+        // All moving entities.
+//        this.entities = new Array;
+//        this.entities.push(this.player);
+
         document.body.appendChild(this.canvas);
 
         // Canvas attributes.
@@ -65,11 +61,60 @@ class Game
 
     }
 
-    // TODO(josh): This is going to be updating game logic/entities. Maybe
-    //              choose a name that reflects that?
+    // Rejection sampling until we find an empty spot to spawn player.
+    _spawnPlayer()
+    {
+        // Player dimensions.
+        var playerHeight = 64;
+        var playerWidth = 32;
+        
+        // Sample space.
+        var ssWidth = this.canvas.width - playerWidth;
+        var ssHeight = this.canvas.height - playerHeight;
+
+        var player = new Entity([ 0, 0, playerWidth, playerHeight ]);
+        player.id = 2;
+
+        this.spatialh.insertObject(player);
+
+        for (let i = 0; i < 10000; i++)
+        {
+            var collision = false;
+
+            // Pick random numbers.
+            player.pos.x = Math.random() * ssWidth;
+            player.pos.y = Math.random() * ssHeight;
+
+            this.spatialh.updateObject(player);
+
+            var n = this.spatialh.getNeighbors(player);
+            
+            if (!n[0])
+                return player;
+                
+            for (let ii = 0; ii < n.length; ii++)
+            {
+                // Simple AABB.
+                if ((player.pos.x < (n[ii].pos.x + n[ii].pos.width)) &&
+                    ((player.pos.x + playerWidth) > n[ii].pos.x) &&
+                    (player.pos.y < (n[ii].pos.y + n[ii].pos.height)) &&
+                    ((player.pos.y + playerHeight) > n[ii].pos.y))
+                {
+                    collision = true;
+                    break;
+                }
+            }
+
+            if (!collision)
+                return player;
+
+        }
+
+        return null;
+    }
+
     updateFrame()
     {
-        // console.log(this.player.state & 0xFFC00);
         entityUpdateVel(this.player);
         entityMove(this.player, this.spatialh, this.player.del.x,
             this.player.del.y);
@@ -90,14 +135,13 @@ class Game
         );
     }
 
-    // TODO(josh): Try moving all cleanup code into this one call.
     cleanUp()
     {
         document.body.removeChild(this.canvas);
     }
 
     // NOTE(josh): Debug Code.
-    _drawGridLines()
+    drawGridLines()
     {
         for (let i = 0, p = 0; i < this.spatialh.cellWidth; i++, p += 64)
         {

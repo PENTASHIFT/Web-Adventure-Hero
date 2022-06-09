@@ -1,6 +1,5 @@
 "use strict";
 
-// NOTE(josh): Reconsider this being a class rather than a pseudo-struct.
 class Entity
 {
     constructor(pos, delX=0, delY=0)
@@ -14,14 +13,9 @@ class Entity
         // Bounding box.
         this.pos = { x: pos[0], y: pos[1], width: pos[2], height: pos[3] };
         this.del = { x: delX, y: delY };
-
-        // TODO(josh): This needs to be set for boundary boxes and character
-        //              for dynamic coloring based upon background, etc.
-        this.color = null;
     }
 }
 
-// NOTE(josh): Does this make sense to have this here?
 function _entityCollision(entity, neighbor, delX, delY)
 {
     // Swept AABB.

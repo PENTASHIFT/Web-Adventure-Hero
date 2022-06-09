@@ -1,12 +1,10 @@
 "use strict";
 
 /*
-    Implementation of Microsoft's VIPS algorithm found here:
+    Modified implementation of the block extractor portion 
+    of Microsoft's VIPS algorithm found here:
         https://www.microsoft.com/en-us/research/wp-content/uploads/2016/02/tr-2003-79.pdf
 */
-
-// NOTE(josh): It may not be worth it to implement the separator portion of this
-//              algorithm.
 
 class MSVIPS
 {

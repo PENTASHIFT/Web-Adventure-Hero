@@ -28,8 +28,6 @@
 
             "js":
             [
-                "src/content_scripts/vips.js",
-
                 "src/content_scripts/entity.js",
                 "src/content_scripts/utils/spatialhash.js",
                 "src/content_scripts/utils/msvips.js",

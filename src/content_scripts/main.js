@@ -1,24 +1,20 @@
 "use strict";
 
-// TODO(josh): Figure out a more proper place to put keyUp & keyDown functions
-//              and stop littering main.js.
+var sh = null;
+var msvips = null;
+var game = null;
 
-// TODO(josh): Remove space key in favor of W key so there isn't any conflict
-//              with default browser key-bindings.
-
-// TODO(josh): Find entry point for both player and entities so they can spawn
-//              correctly.
-
-// TODO(josh): Go through all the code and make sure it's stylistically consistant.
+var debug = false;
 
 const moveSpeed = 3;
 
 function keyUp(key)
 {
-    switch(key.keyCode)
+    switch (key.keyCode)
     {
         case 68:    // D key
         {
+            // If we're moving the opposite direction already, don't interrupt.
             if (game.player.del.x == -moveSpeed)
             {
                 return;
@@ -26,12 +22,19 @@ function keyUp(key)
 
             else
             {
+                if (!isState(game.player.state, STATES.falling))
+                {
+                    game.player.state = stateUpdate(game.player.state,
+                        STATES.standing);
+                }
+
                 game.player.del.x = 0;
             }
         } break;
 
         case 65:    // A key
         {
+            // If we're moving the opposite direction already, don't interrupt.
             if (game.player.del.x == moveSpeed)
             {
                 return;
@@ -39,55 +42,83 @@ function keyUp(key)
 
             else
             {
+                if (!isState(game.player.state, STATES.falling))
+                {
+                    game.player.state = stateUpdate(game.player.state,
+                        STATES.standing);
+                }
+
                 game.player.del.x = 0;
             }
         } break;
 
+        case 81:    // Q key
+        {
+            debug = false;
+        } break;
     }
 }
 
 function keyPress(key)
 {
-    switch(key.keyCode)
+    switch (key.keyCode)
     {
         case 68:    // D key
         {
-            //console.log("D");
+            if (!isState(game.player.state, STATES.sign))
+            {
+                game.player.state = stateUpdate(game.player.state, STATES.sign);
+            }
+
+            if (!isState(game.player.state, STATES.falling))
+            {
+                    game.player.state = stateUpdate(game.player.state,
+                        STATES.running);
+            }
+
             game.player.del.x = moveSpeed;
         } break;
 
         case 65:    // A key
         {
-            //console.log("A");
+            if (isState(game.player.state, STATES.sign))
+            {
+                game.player.state = stateUpdate(game.player.state, STATES.sign);
+            }
+
+            if (!isState(game.player.state, STATES.falling))
+            {
+                    game.player.state = stateUpdate(game.player.state,
+                        STATES.running);
+            }
+
             game.player.del.x = -moveSpeed;
         } break;
         
-
         case 87:    // W key
         {
             game.player.state = stateUpdate(game.player.state, STATES.jumping);
             game.player.state = stateUpdate(game.player.state, STATES.hasJumped);
         } break;
 
-        // NOTE(josh): Debug code.
-        default: {
-            console.log(key.keyCode);
+        case 81:    // Q key
+        {
+            debug = true;
         } break;
     }
 }
 
-var sh = null;
-var msvips = null;
-var game = null;
-
 // Main gameplay loop.
-function _loop()
+function loop()
 {
     // TODO(josh): Add pause check.
     game.updateFrame();
     game.drawPlayer();
-    game._drawGridLines();
-    requestAnimationFrame(_loop);
+    
+    if (debug)
+        game.drawGridLines();
+
+    requestAnimationFrame(loop);
 }
 
 function toggle()
@@ -116,7 +147,7 @@ function toggle()
 
             canvasDim.width = (window.innerWidth - scrollBarDim.width);
             canvasDim.height = (window.innerHeight - scrollBarDim.height);
-        }
+        };
 
         sh = new SpatialHash(canvasDim);
         msvips = new MSVIPS(document.body, canvasDim, sh);
@@ -125,6 +156,6 @@ function toggle()
         window.addEventListener("keyup", keyUp);
         window.addEventListener("keydown", keyPress);
 
-        _loop();
+        loop();
     }
 }
