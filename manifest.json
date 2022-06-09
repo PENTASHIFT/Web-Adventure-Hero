@@ -28,10 +28,14 @@
 
             "js":
             [
-                "src/content_scripts/entity.js",
-                "src/content_scripts/spatialhash.js",
                 "src/content_scripts/vips.js",
+
+                "src/content_scripts/entity.js",
+                "src/content_scripts/utils/spatialhash.js",
+                "src/content_scripts/utils/msvips.js",
+                "src/content_scripts/states.js",
                 "src/content_scripts/game.js",
+
                 "src/content_scripts/main.js"
             ],
 

@@ -1,30 +1,28 @@
 "use strict";
 
-const entityStates = 
-{
-    standing: 0,
-    jumping: 1,
-    attacking: 2
-};
-
 // NOTE(josh): Reconsider this being a class rather than a pseudo-struct.
 class Entity
 {
-    constructor(pos)
+    constructor(pos, delX=0, delY=0)
     {
         this.sh = null;         // See utils/spatialhash.js
         this.id = -1;
         this.hitBoxes = null;   // See utils/hitbox.js
-        this.state = null;
+
+        this.state = STATES.falling;
 
         // Bounding box.
         this.pos = { x: pos[0], y: pos[1], width: pos[2], height: pos[3] };
-        this.del = { x: 0, y: 0 };
+        this.del = { x: delX, y: delY };
+
+        // TODO(josh): This needs to be set for boundary boxes and character
+        //              for dynamic coloring based upon background, etc.
+        this.color = null;
     }
 }
 
 // NOTE(josh): Does this make sense to have this here?
-function _entityCollision(entity, neighbor)
+function _entityCollision(entity, neighbor, delX, delY)
 {
     // Swept AABB.
     var normalX = 0;
@@ -34,7 +32,7 @@ function _entityCollision(entity, neighbor)
     var xEntry, xExit, xInvEntry, xInvExit;
     var yEntry, yExit, yInvEntry, yInvExit;
     
-    if (entity.del.y > 0)
+    if (delY > 0)
     {
         // Check neighbor.pos.y
         /*
@@ -65,7 +63,7 @@ function _entityCollision(entity, neighbor)
         yInvExit = neighbor.pos.y - (entity.pos.y + entity.pos.height);
     }
 
-    if (entity.del.x > 0)
+    if (delX > 0)
     {
         // Check neighbor.pos.x
         /*
@@ -94,19 +92,19 @@ function _entityCollision(entity, neighbor)
         xInvExit = neighbor.pos.x - (entity.pos.x + entity.pos.width);
     }
 
-    xEntry = xInvEntry / entity.del.x;
-    xExit = xInvExit / entity.del.x;
+    xEntry = xInvEntry / delX;
+    xExit = xInvExit / delX;
 
-    yEntry = yInvEntry / entity.del.y;
-    yExit = yInvExit / entity.del.y;
+    yEntry = yInvEntry / delY;
+    yExit = yInvExit / delY;
 
-    if (entity.del.x == 0)
+    if (delX == 0)
     {
         xEntry = -Infinity;
         xExit = Infinity;
     }
     
-    if (entity.del.y == 0)
+    if (delY == 0)
     {
         yEntry = -Infinity;
         yExit = Infinity;
@@ -154,13 +152,11 @@ function _entityCollision(entity, neighbor)
     return [entryTime, [normalX, normalY]];
 } 
 
-function entityMove(entity, spatialh)
+function entityMove(entity, spatialh, delX, delY)
 {
-    if (entity.del.y == 0 && entity.del.x == 0)
+    // Sanity check.
+    if (delY == 0 && delX == 0)
     {
-        // TODO(josh): I don't like having to reassign gravity everytime. 
-        //              Brainstorm an alternative.
-        entity.del.y = 3;   // Reset gravity.
         return;
     }
 
@@ -176,7 +172,7 @@ function entityMove(entity, spatialh)
         if (neighbors[i].id != -1)
             continue;
 
-        var [c, n] = _entityCollision(entity, neighbors[i]);
+        var [c, n] = _entityCollision(entity, neighbors[i], delX, delY);
 
         if (c < collisionTime)
         {
@@ -185,25 +181,68 @@ function entityMove(entity, spatialh)
         }
     }
 
-    entity.pos.x += entity.del.x * collisionTime;
-    entity.pos.y += entity.del.y * collisionTime;
+    entity.pos.x += (delX * collisionTime);
+    entity.pos.y += (delY * collisionTime);
     
     spatialh.updateObject(entity);
+
+    if (normalY == -1)
+    {
+        if (delX != 0)
+        {
+            entity.state = stateUpdate(entity.state, STATES.running);
+        }
+        else
+        {
+            entity.state = stateUpdate(entity.state, STATES.standing);
+        }
+    }
 
     // Push response to collision.
     if (collisionTime < 1.0)
     {
         var remainingTime = 1.0 - collisionTime;
-        var magnitude = Math.sqrt((entity.del.x * entity.del.x + 
-            entity.del.y * entity.del.y)) * remainingTime;
-        var dotprod = entity.del.x * normalY + entity.del.y * normalX;
+        var magnitude = Math.sqrt((delX * delX + 
+            delY * delY)) * remainingTime;
+        var dotprod = delX * normalY + delY * normalX;
+        var newDelX, newDelY;
 
         if (dotprod > 0) dotprod = 1;
         else if (dotprod < 0) dotprod = -1;
 
-        entity.del.x = dotprod * normalY * magnitude;
-        entity.del.y = dotprod * normalX * magnitude;
+        newDelX = dotprod * normalY * magnitude;
+        newDelY = dotprod * normalX * magnitude;
+        
+        // If mid-jumping and hit the bottom of a platform.
+        if (normalY == 1)
+        {
+            entity.state = stateUpdate(entity.state, STATES.falling);
+            newDelY = -newDelY;
+        }
 
-        entityMove(entity, spatialh);
+        entityMove(entity, spatialh, newDelX, newDelY);
+    }
+}
+
+function entityUpdateVel(entity)
+{
+    if (isState(entity.state, STATES.jumping))
+    {
+        var cnt = stateCount(entity.state, STATES.jumping);
+
+        // Derivative of parabola -0.3472x^2 + 8.333x.
+        // Negated because the origin is in the top left corner of the canvas.
+        var delY = -((cnt * -0.6944) + 8.333);
+        if (delY > 0)
+        {
+            entity.state = stateUpdate(entity.state, STATES.falling);
+        }
+
+        entity.del.y = delY;
+    }
+    else if (isState(entity.state, STATES.falling))
+    {
+        // NOTE(josh): Kind of weird to immediately go to 3 but, it should be fine?
+        entity.del.y = 3;
     }
 }

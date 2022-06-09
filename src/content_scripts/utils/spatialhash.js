@@ -4,11 +4,12 @@ class SpatialHash
 {
     constructor(dim) 
     {
-        let [width, height] = dim;      // Dimensions of window.
+        // Dimensions of window.
+        var width = dim.width;
+        var height = dim.height;
+
         this.cellSize = 6;      // Divison/Multiplication by 64 via bitshift.
 
-        // NOTE(josh): Don't know if incrementing no matter what is the play
-        //              here.
         this.cellWidth = (width >> this.cellSize) + 1;        // Floor division.
         this.cellHeight = (height >> this.cellSize) + 1;      // Floor division.
 
@@ -26,12 +27,12 @@ class SpatialHash
         // Sanity checks.
         if (x < 0)
             x = 0;
-        else if (x > this.cellWidth)
+        else if (x >= this.cellWidth)
             x = this.cellWidth - 1;
 
         if (y < 0)
             y = 0;
-        else if (y > this.cellHeight)
+        else if (y >= this.cellHeight)
             y = this.cellHeight - 1;
 
         return [x, y];

@@ -1,32 +1,44 @@
 "use strict";
 
+// TODO(josh): Account for window changing size.
+
 class Game
 {
-    constructor()
+    constructor(dim, sh)
     {
         // Create the canvas.
         this.canvas = document.createElement("canvas");
         this.ctx = this.canvas.getContext("2d");
-        this.canvas.width = window.innerWidth;
-        this.canvas.height = window.innerHeight;
+        this.canvas.width = dim.width;
+        this.canvas.height = dim.height;
         
         // See util/spatialhash.js
-        this.spatialh = new SpatialHash([
-            this.canvas.width, 
-            this.canvas.height
-        ]);
+        this.spatialh = sh;
+
+        // Add boundaries to edge of screen.
+        // Ceiling.
+        this.spatialh.insertObject(
+            new Entity([ 0, 0, this.canvas.width, 1 ])
+        );
+        // Floor
+        this.spatialh.insertObject(
+            new Entity([ 0, this.canvas.height - 1, this.canvas.width, 1 ])
+        );
+        // Left Wall
+        this.spatialh.insertObject(
+            new Entity([ 0, 0, 1, this.canvas.height ])
+        );
+        // Right Wall
+        this.spatialh.insertObject(
+            new Entity([ this.canvas.width - 1, 0, 1, this.canvas.height ])
+        );
 
         // See entity.js
         this.player = new Entity([
             this.canvas.width >> 1, 
             this.canvas.height >> 1, 
             32, 64
-        ]);
-
-        // Game attributes
-        this.gravity = 3;
-
-        this.player.del.y = this.gravity;
+        ], 0, this.gravity);
 
         // All moving entities.
         this.entities = new Array;
@@ -44,10 +56,10 @@ class Game
         this.canvas.style.top = "0px";
         this.canvas.style.left = "0px";
         this.canvas.style.position = "fixed";
-        this.canvas.style.width = window.innerWidth + "px";
-        this.canvas.style.height = window.innerHeight + "px";
-        this.canvas.style.zIndex = "250000";
-        this.canvas.style.backgroundColor = "#ffffff00";
+        this.canvas.style.width = this.canvas.width + "px";
+        this.canvas.style.height = this.canvas.height + "px";
+        this.canvas.style.zIndex = "250000";                // Top-most layer.
+        this.canvas.style.backgroundColor = "#ffffff00";    // Transparent.
 
         this.canvas.focus();
 
@@ -57,7 +69,11 @@ class Game
     //              choose a name that reflects that?
     updateFrame()
     {
-        entityMove(this.player, this.spatialh);
+        // console.log(this.player.state & 0xFFC00);
+        entityUpdateVel(this.player);
+        entityMove(this.player, this.spatialh, this.player.del.x,
+            this.player.del.y);
+        this.player.state = stateIncrement(this.player.state);
     }
 
     drawPlayer()
@@ -72,6 +88,12 @@ class Game
             this.player.pos.width,
             this.player.pos.height
         );
+    }
+
+    // TODO(josh): Try moving all cleanup code into this one call.
+    cleanUp()
+    {
+        document.body.removeChild(this.canvas);
     }
 
     // NOTE(josh): Debug Code.
@@ -93,10 +115,5 @@ class Game
                 }
             }
         }
-    }
-
-    cleanUp()
-    {
-        document.body.removeChild(this.canvas);
     }
 }

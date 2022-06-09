@@ -1,36 +1,53 @@
 "use strict";
 
-// NOTE(josh): Probably do hit-boxes for more granularity with collision.
-//              Pixel-perfect collision would probably be overkill.
-
-// NOTE(josh): There is something very wrong with the spatialhash. There seems
-//              to be an extra cell of padding per edge.
-
 // TODO(josh): Figure out a more proper place to put keyUp & keyDown functions
 //              and stop littering main.js.
+
+// TODO(josh): Remove space key in favor of W key so there isn't any conflict
+//              with default browser key-bindings.
+
+// TODO(josh): Find entry point for both player and entities so they can spawn
+//              correctly.
+
+// TODO(josh): Go through all the code and make sure it's stylistically consistant.
+
+const moveSpeed = 3;
 
 function keyUp(key)
 {
     switch(key.keyCode)
     {
         case 68:    // D key
-        case 65:    // A key
         {
-            game.player.del.x = 0;
+            if (game.player.del.x == -moveSpeed)
+            {
+                return;
+            }
+
+            else
+            {
+                game.player.del.x = 0;
+            }
         } break;
 
-        // NOTE(josh): Debug
-        case 87:    // W key
-        case 83:    // S key
+        case 65:    // A key
         {
-            game.player.del.y = 0;
+            if (game.player.del.x == moveSpeed)
+            {
+                return;
+            }
+
+            else
+            {
+                game.player.del.x = 0;
+            }
         } break;
+
     }
 }
 
 function keyPress(key)
 {
-    const moveSpeed = 3;
     switch(key.keyCode)
     {
         case 68:    // D key
@@ -46,41 +63,27 @@ function keyPress(key)
         } break;
         
 
-        case 32:    // Space
-        {
-            if (game.player.state != entityStates.jumping)
-            {
-                console.log("SPACE");
-                game.player.del.y = -moveSpeed;
-                game.player.state = entityStates.jumping;
-            }
-        } break;
-
-        // NOTE(josh): Debug
         case 87:    // W key
         {
-            //console.log("W");
-            game.player.del.y = -moveSpeed;
+            game.player.state = stateUpdate(game.player.state, STATES.jumping);
+            game.player.state = stateUpdate(game.player.state, STATES.hasJumped);
         } break;
 
-        case 83:    // S key
-        {
-            //console.log("S");
-            game.player.del.y = moveSpeed;
-        } break;
-
+        // NOTE(josh): Debug code.
         default: {
             console.log(key.keyCode);
         } break;
     }
 }
 
+var sh = null;
+var msvips = null;
 var game = null;
 
 // Main gameplay loop.
 function _loop()
 {
-    // TODO(josh): Add pause functionality.
+    // TODO(josh): Add pause check.
     game.updateFrame();
     game.drawPlayer();
     game._drawGridLines();
@@ -95,15 +98,33 @@ function toggle()
         game.cleanUp();
         window.removeEventListener("keyup", keyUp);
         window.removeEventListener("keydown", keyPress);
+        sh = null;
+        msvips = null;
         game = null;
     }
     else
     {
         // Turn on.
-        game = new Game;
-        VIPS(document.body, game.spatialh)
+        var canvasDim = { width: 0, height: 0 };
+
+        {
+            let scrollBarDim = 
+            {
+                width: (window.innerWidth - document.documentElement.clientWidth),
+                height: (window.innerHeight - document.documentElement.clientHeight)
+            };
+
+            canvasDim.width = (window.innerWidth - scrollBarDim.width);
+            canvasDim.height = (window.innerHeight - scrollBarDim.height);
+        }
+
+        sh = new SpatialHash(canvasDim);
+        msvips = new MSVIPS(document.body, canvasDim, sh);
+        game = new Game(canvasDim, sh);
+
         window.addEventListener("keyup", keyUp);
         window.addEventListener("keydown", keyPress);
+
         _loop();
     }
 }
